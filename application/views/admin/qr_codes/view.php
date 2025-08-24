@@ -1,4 +1,4 @@
-<div class="row">
+ <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h3 mb-0">
@@ -70,23 +70,29 @@
                                         $type_class = 'bg-secondary';
                                         $type_text = 'Unknown';
                                         
-                                        switch ($qr_code->qr_type) {
-                                            case 'attendance':
-                                                $type_class = 'bg-success';
-                                                $type_text = 'Absensi';
-                                                break;
-                                            case 'checkpoint':
-                                                $type_class = 'bg-info';
-                                                $type_text = 'Checkpoint';
-                                                break;
-                                            case 'access':
-                                                $type_class = 'bg-warning';
-                                                $type_text = 'Akses';
-                                                break;
-                                            case 'information':
-                                                $type_class = 'bg-primary';
-                                                $type_text = 'Informasi';
-                                                break;
+                                        // Check if qr_type field exists, otherwise use default
+                                        if (isset($qr_code->qr_type) && $qr_code->qr_type) {
+                                            switch ($qr_code->qr_type) {
+                                                case 'attendance':
+                                                    $type_class = 'bg-success';
+                                                    $type_text = 'Absensi';
+                                                    break;
+                                                case 'checkpoint':
+                                                    $type_class = 'bg-info';
+                                                    $type_text = 'Checkpoint';
+                                                    break;
+                                                case 'access':
+                                                    $type_class = 'bg-warning';
+                                                    $type_text = 'Akses';
+                                                    break;
+                                                case 'information':
+                                                    $type_class = 'bg-primary';
+                                                    $type_text = 'Informasi';
+                                                    break;
+                                            }
+                                        } else {
+                                            $type_class = 'bg-primary';
+                                            $type_text = 'Absensi';
                                         }
                                     ?>
                                     <span class="badge <?= $type_class ?>"><?= $type_text ?></span>
@@ -99,31 +105,34 @@
                                         $validity_class = 'bg-success';
                                         $validity_text = 'Tidak Terbatas';
                                         
-                                        switch ($qr_code->validity_period) {
-                                            case 'daily':
-                                                $validity_class = 'bg-warning';
-                                                $validity_text = 'Harian';
-                                                break;
-                                            case 'weekly':
-                                                $validity_class = 'bg-info';
-                                                $validity_text = 'Mingguan';
-                                                break;
-                                            case 'monthly':
-                                                $validity_class = 'bg-primary';
-                                                $validity_text = 'Bulanan';
-                                                break;
-                                            case 'yearly':
-                                                $validity_class = 'bg-secondary';
-                                                $validity_text = 'Tahunan';
-                                                break;
+                                        // Check if validity_period field exists, otherwise use default
+                                        if (isset($qr_code->validity_period) && $qr_code->validity_period) {
+                                            switch ($qr_code->validity_period) {
+                                                case 'daily':
+                                                    $validity_class = 'bg-warning';
+                                                    $validity_text = 'Harian';
+                                                    break;
+                                                case 'weekly':
+                                                    $validity_class = 'bg-info';
+                                                    $validity_text = 'Mingguan';
+                                                    break;
+                                                case 'monthly':
+                                                    $validity_class = 'bg-primary';
+                                                    $validity_text = 'Bulanan';
+                                                    break;
+                                                case 'yearly':
+                                                    $validity_class = 'bg-secondary';
+                                                    $validity_text = 'Tahunan';
+                                                    break;
+                                            }
                                         }
                                     ?>
                                     <span class="badge <?= $validity_class ?>"><?= $validity_text ?></span>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Dibuat Oleh:</strong></td>
-                                <td><?= $qr_code->created_by ? ($qr_code->creator_name ?: 'Admin') : 'System' ?></td>
+                                <!-- <td><strong>Dibuat Oleh:</strong></td>
+                                <td><?= $qr_code->created_by ? ($qr_code->created_by_name ?: 'Admin') : 'System' ?></td> -->
                             </tr>
                         </table>
                     </div>
@@ -144,7 +153,7 @@
                         <div class="mb-3">
                             <label class="form-label"><strong>Tanggal Mulai Berlaku:</strong></label>
                             <div class="p-2 bg-light rounded">
-                                <?= $qr_code->start_date ? date('d/m/Y', strtotime($qr_code->start_date)) : 'Tidak ditentukan' ?>
+                                <?= (isset($qr_code->start_date) && $qr_code->start_date) ? date('d/m/Y', strtotime($qr_code->start_date)) : 'Tidak ditentukan' ?>
                             </div>
                         </div>
                     </div>
@@ -152,7 +161,7 @@
                         <div class="mb-3">
                             <label class="form-label"><strong>Tanggal Berakhir:</strong></label>
                             <div class="p-2 bg-light rounded">
-                                <?= $qr_code->end_date ? date('d/m/Y', strtotime($qr_code->end_date)) : 'Tidak terbatas' ?>
+                                <?= (isset($qr_code->end_date) && $qr_code->end_date) ? date('d/m/Y', strtotime($qr_code->end_date)) : 'Tidak terbatas' ?>
                             </div>
                         </div>
                     </div>
@@ -374,11 +383,13 @@
                     $is_expired = false;
                     $is_not_started = false;
                     
-                    if ($qr_code->end_date && $current_date > $qr_code->end_date) {
+                    // Check if end_date field exists and is not null
+                    if (isset($qr_code->end_date) && $qr_code->end_date && $current_date > $qr_code->end_date) {
                         $is_expired = true;
                     }
                     
-                    if ($qr_code->start_date && $current_date < $qr_code->start_date) {
+                    // Check if start_date field exists and is not null
+                    if (isset($qr_code->start_date) && $qr_code->start_date && $current_date < $qr_code->start_date) {
                         $is_not_started = true;
                     }
                 ?>

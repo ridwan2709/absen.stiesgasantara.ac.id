@@ -195,6 +195,74 @@ class Admin extends CI_Controller {
         redirect('admin/qr_codes');
     }
     
+    public function duplicate_qr_code($id) {
+        $original_qr = $this->QRCode_model->get_qr_code_by_id($id);
+        
+        if (!$original_qr) {
+            show_404();
+        }
+        
+        $qr_data = array(
+            'code' => $this->QRCode_model->generate_unique_code(),
+            'name' => $original_qr->name . ' (Copy)',
+            'description' => $original_qr->description,
+            'location' => $original_qr->location,
+            'created_by' => $this->session->userdata('user_id')
+        );
+        
+        if ($this->QRCode_model->create_qr_code($qr_data)) {
+            $this->session->set_flashdata('success', 'QR Code berhasil diduplikasi');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menduplikasi QR Code');
+        }
+        redirect('admin/qr_codes');
+    }
+
+    public function view_qr_code($id) {
+        $data['title'] = 'Lihat QR Code';
+        $data['qr_code'] = $this->QRCode_model->get_qr_code_by_id($id);
+        
+        if (!$data['qr_code']) {
+            show_404();
+        }
+        
+        // Get usage statistics
+        $data['usage_stats'] = $this->QRCode_model->get_qr_code_detailed_stats($id);
+        
+        // Get recent usage
+        $data['recent_usage'] = $this->QRCode_model->get_qr_code_recent_usage($id, 10);
+
+        $this->load->view('templates/header', $data);
+        $this->load->view('admin/qr_codes/view', $data);
+        $this->load->view('templates/footer');
+    }
+    
+    public function qr_code_usage($qr_code_id) {
+        $data['title'] = 'Riwayat Penggunaan QR Code';
+        $data['qr_code'] = $this->QRCode_model->get_qr_code_by_id($qr_code_id);
+        
+        if (!$data['qr_code']) {
+            show_404();
+        }
+        
+        // Get date range from GET parameters
+        $start_date = $this->input->get('start_date') ?: date('Y-m-d', strtotime('-30 days'));
+        $end_date = $this->input->get('end_date') ?: date('Y-m-d');
+        
+        $data['start_date'] = $start_date;
+        $data['end_date'] = $end_date;
+        
+        // Get usage statistics for the date range
+        $data['usage_stats'] = $this->QRCode_model->get_qr_code_usage($qr_code_id, $start_date, $end_date);
+        
+        // Get all usage records for the date range
+        $data['usage_records'] = $this->QRCode_model->get_qr_code_recent_usage($qr_code_id, 1000); // Large limit to get all records
+        
+        $this->load->view('templates/header', $data);
+        $this->load->view('admin/qr_codes/usage', $data);
+        $this->load->view('templates/footer');
+    }
+    
     // Reports
     public function reports() {
         $data['title'] = 'Laporan Absensi';

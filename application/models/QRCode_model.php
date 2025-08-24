@@ -117,4 +117,29 @@ class QRCode_model extends CI_Model {
         $this->db->where('is_active', 1);
         return $this->db->count_all_results('qr_codes');
     }
+    
+    // Get detailed QR code usage statistics
+    public function get_qr_code_detailed_stats($qr_code_id) {
+        $this->db->select('COUNT(*) as total_scans');
+        $this->db->select('COUNT(DISTINCT user_id) as unique_users');
+        $this->db->select('COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as today_scans');
+        $this->db->select('COUNT(CASE WHEN YEARWEEK(created_at) = YEARWEEK(CURDATE()) THEN 1 END) as this_week_scans');
+        $this->db->select('MAX(created_at) as last_scan');
+        $this->db->from('attendance');
+        $this->db->where('qr_code_id', $qr_code_id);
+        
+        return $this->db->get()->row();
+    }
+    
+    // Get recent QR code usage
+    public function get_qr_code_recent_usage($qr_code_id, $limit = 10) {
+        $this->db->select('a.*, u.full_name, u.username');
+        $this->db->from('attendance a');
+        $this->db->join('users u', 'u.id = a.user_id');
+        $this->db->where('a.qr_code_id', $qr_code_id);
+        $this->db->order_by('a.created_at', 'DESC');
+        $this->db->limit($limit);
+        
+        return $this->db->get()->result();
+    }
 }
