@@ -9,7 +9,7 @@ class Dashboard extends CI_Controller {
         $this->load->model('Attendance_model');
         $this->load->model('QRCode_model');
         $this->load->library('session');
-        $this->load->helper('url');
+        $this->load->helper(['url', 'form']);
         
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {
@@ -80,28 +80,89 @@ class Dashboard extends CI_Controller {
     }
     
     public function profile() {
-        $data['user'] = $this->session->userdata();
-        $data['title'] = 'Profil Saya';
-        $data['user_data'] = $this->User_model->get_user_by_id($data['user']['user_id']);
+        $data['title'] = 'Profile Saya';
+        $user_id = $this->session->userdata('user_id');
+        $data['user'] = $this->User_model->get_user_by_id($user_id);
+        
+        if (!$data['user']) {
+            show_404();
+        }
         
         if ($this->input->post()) {
-            $update_data = array(
-                'full_name' => $this->input->post('full_name'),
-                'email' => $this->input->post('email'),
-                'phone' => $this->input->post('phone'),
-                'address' => $this->input->post('address')
-            );
+            $this->form_validation->set_rules('full_name', 'Nama Lengkap', 'required|trim');
+            $this->form_validation->set_rules('email', 'Email', 'required|valid_email|trim');
+            $this->form_validation->set_rules('phone', 'Nomor Telepon', 'trim');
+            $this->form_validation->set_rules('address', 'Alamat', 'trim');
             
-            if ($this->User_model->update_user($data['user']['user_id'], $update_data)) {
-                $this->session->set_flashdata('success', 'Profil berhasil diperbarui');
-                redirect('dashboard/profile');
-            } else {
-                $this->session->set_flashdata('error', 'Gagal memperbarui profil');
+            if ($this->form_validation->run() == TRUE) {
+                // Check if email is already used by another user
+                $this->db->where('email', $this->input->post('email'));
+                $this->db->where('id !=', $user_id);
+                $existing_email = $this->db->get('users')->row();
+                
+                if ($existing_email) {
+                    $this->session->set_flashdata('error', 'Email sudah digunakan oleh pengguna lain');
+                } else {
+                    $update_data = array(
+                        'full_name' => $this->input->post('full_name'),
+                        'email' => $this->input->post('email'),
+                        'phone' => $this->input->post('phone'),
+                        'address' => $this->input->post('address')
+                    );
+                    
+                    if ($this->User_model->update_user($user_id, $update_data)) {
+                        // Update session data
+                        $this->session->set_userdata('full_name', $update_data['full_name']);
+                        $this->session->set_userdata('email', $update_data['email']);
+                        
+                        $this->session->set_flashdata('success', 'Profile berhasil diperbarui');
+                        redirect('dashboard/profile');
+                    } else {
+                        $this->session->set_flashdata('error', 'Gagal memperbarui profile');
+                    }
+                }
             }
         }
         
         $this->load->view('templates/header', $data);
         $this->load->view('dashboard/profile', $data);
+        $this->load->view('templates/footer');
+    }
+    
+    public function change_password() {
+        $data['title'] = 'Ganti Password';
+        $user_id = $this->session->userdata('user_id');
+        
+        if ($this->input->post()) {
+            $this->form_validation->set_rules('current_password', 'Password Saat Ini', 'required');
+            $this->form_validation->set_rules('new_password', 'Password Baru', 'required|min_length[6]');
+            $this->form_validation->set_rules('confirm_password', 'Konfirmasi Password', 'required|matches[new_password]');
+            
+            if ($this->form_validation->run() == TRUE) {
+                // Get current user data
+                $this->db->where('id', $user_id);
+                $user = $this->db->get('users')->row();
+                
+                // Verify current password
+                if (password_verify($this->input->post('current_password'), $user->password)) {
+                    $update_data = array(
+                        'password' => $this->input->post('new_password')
+                    );
+                    
+                    if ($this->User_model->update_user($user_id, $update_data)) {
+                        $this->session->set_flashdata('success', 'Password berhasil diubah');
+                        redirect('dashboard/profile');
+                    } else {
+                        $this->session->set_flashdata('error', 'Gagal mengubah password');
+                    }
+                } else {
+                    $this->session->set_flashdata('error', 'Password saat ini tidak benar');
+                }
+            }
+        }
+        
+        $this->load->view('templates/header', $data);
+        $this->load->view('dashboard/change_password', $data);
         $this->load->view('templates/footer');
     }
     
@@ -142,4 +203,5 @@ class Dashboard extends CI_Controller {
         $this->load->view('dashboard/scan_qr', $data);
         $this->load->view('templates/footer');
     }
+    
 }

@@ -126,7 +126,7 @@
         // Global AJAX error handler
         $(document).ajaxError(function(event, xhr, settings, error) {
             console.error('AJAX Error:', error);
-            showError('Terjadi kesalahan pada server. Silakan coba lagi.');
+            console.log('Terjadi kesalahan pada server. Silakan coba lagi.');
         });
     </script>
 </body>

@@ -288,7 +288,7 @@ function performCheckIn(qrCode) {
             }
         },
         error: function() {
-            showError('Terjadi kesalahan pada server. Silakan coba lagi.');
+            console.log('Terjadi kesalahan pada server. Silakan coba lagi.');
         }
     });
 }
@@ -314,7 +314,7 @@ function performCheckOut(qrCode) {
             }
         },
         error: function() {
-            showError('Terjadi kesalahan pada server. Silakan coba lagi.');
+            console.log('Terjadi kesalahan pada server. Silakan coba lagi.');
         }
     });
 }

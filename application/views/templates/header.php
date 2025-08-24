@@ -180,7 +180,7 @@
                                     <li><a class="dropdown-item" href="<?= base_url('dashboard/profile') ?>">
                                         <i class="fas fa-user me-2"></i>Profil
                                     </a></li>
-                                    <li><a class="dropdown-item" href="<?= base_url('auth/change_password') ?>">
+                                    <li><a class="dropdown-item" href="<?= base_url('dashboard/change_password') ?>">
                                         <i class="fas fa-key me-2"></i>Ubah Password
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
