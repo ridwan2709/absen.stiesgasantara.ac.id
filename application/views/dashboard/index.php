@@ -222,7 +222,7 @@
                                 </p>
                                 <a href="<?= base_url('dashboard/scan_qr') ?>" class="btn btn-primary">
                                     <i class="fas fa-qrcode me-2"></i>
-                                    Absen Pulang
+                                    Absen
                                 </a>
                             <?php elseif ($today_attendance->check_in && $today_attendance->check_out): ?>
                                 <div class="h1 text-info mb-3">

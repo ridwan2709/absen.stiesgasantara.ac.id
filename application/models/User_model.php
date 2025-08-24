@@ -47,6 +47,8 @@ class User_model extends CI_Model {
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         $data['created_at'] = date('Y-m-d H:i:s');
         $data['updated_at'] = date('Y-m-d H:i:s');
+        // Set is_default_password to 1 for new users
+        $data['is_default_password'] = 1;
         
         $this->db->insert('users', $data);
         return $this->db->insert_id();
@@ -56,6 +58,8 @@ class User_model extends CI_Model {
     public function update_user($id, $data) {
         if (isset($data['password']) && !empty($data['password'])) {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            // Set is_default_password to 0 when password is changed
+            $data['is_default_password'] = 0;
         }
         $data['updated_at'] = date('Y-m-d H:i:s');
         

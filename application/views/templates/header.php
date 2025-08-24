@@ -210,5 +210,33 @@
                     </div>
                 <?php endif; ?>
                 
+                <!-- Password Default Warning (Global) -->
+                <?php if ($this->session->userdata('is_default_password') == 1): ?>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="alert-heading mb-1">
+                                    <strong>⚠️ Peringatan Keamanan!</strong>
+                                </h6>
+                                <p class="mb-2">
+                                    Anda masih menggunakan password default. Untuk keamanan akun, 
+                                    <strong>segera ganti password Anda</strong> dengan password yang lebih kuat.
+                                </p>
+                                <div class="d-flex gap-2">
+                                    <a href="<?= base_url('dashboard/change_password') ?>" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-key me-2"></i>
+                                        Ganti Password Sekarang
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-dismiss="alert">
+                                        <i class="fas fa-times me-2"></i>
+                                        Tutup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
                 <!-- Page content -->
                 <div class="container-fluid">

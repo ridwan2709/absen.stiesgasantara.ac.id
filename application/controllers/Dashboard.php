@@ -21,6 +21,9 @@ class Dashboard extends CI_Controller {
         $data['user'] = $this->session->userdata();
         $data['title'] = 'Dashboard';
         
+        // Check if user is using default password
+        $data['show_password_warning'] = $this->session->userdata('is_default_password') == 1;
+        
         // Get data based on user role
         switch ($data['user']['role']) {
             case 'admin':
@@ -151,7 +154,7 @@ class Dashboard extends CI_Controller {
                     
                     if ($this->User_model->update_user($user_id, $update_data)) {
                         $this->session->set_flashdata('success', 'Password berhasil diubah');
-                        redirect('dashboard/profile');
+                        redirect('auth/logout');
                     } else {
                         $this->session->set_flashdata('error', 'Gagal mengubah password');
                     }

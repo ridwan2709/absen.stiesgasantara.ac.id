@@ -43,6 +43,7 @@ class Auth extends CI_Controller {
                 'full_name' => $user->full_name,
                 'role' => $user->role,
                 'department' => $user->department,
+                'is_default_password' => $user->is_default_password,
                 'logged_in' => TRUE
             );
             
