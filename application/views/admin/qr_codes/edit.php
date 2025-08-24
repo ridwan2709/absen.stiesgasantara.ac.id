@@ -89,15 +89,17 @@
                         </div>
                     </div>
                     
+                    <!-- Field-field ini tidak tersedia di database saat ini -->
+                    <!-- 
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="qr_type" class="form-label">Tipe QR Code</label>
                                 <select class="form-control" id="qr_type" name="qr_type">
-                                    <option value="attendance" <?= set_select('qr_type', 'attendance', $qr_code->qr_type == 'attendance') ?>>Absensi</option>
-                                    <option value="checkpoint" <?= set_select('qr_type', 'checkpoint', $qr_code->qr_type == 'checkpoint') ?>>Checkpoint</option>
-                                    <option value="access" <?= set_select('qr_type', 'access', $qr_code->qr_type == 'access') ?>>Akses</option>
-                                    <option value="information" <?= set_select('qr_type', 'information', $qr_code->qr_type == 'information') ?>>Informasi</option>
+                                    <option value="attendance" selected>Absensi</option>
+                                    <option value="checkpoint">Checkpoint</option>
+                                    <option value="access">Akses</option>
+                                    <option value="information">Informasi</option>
                                 </select>
                                 <div class="form-text">
                                     Pilih tipe QR Code sesuai fungsinya
@@ -109,11 +111,11 @@
                             <div class="mb-3">
                                 <label for="validity_period" class="form-label">Masa Berlaku</label>
                                 <select class="form-control" id="validity_period" name="validity_period">
-                                    <option value="unlimited" <?= set_select('validity_period', 'unlimited', $qr_code->validity_period == 'unlimited') ?>>Tidak Terbatas</option>
-                                    <option value="daily" <?= set_select('validity_period', 'daily', $qr_code->validity_period == 'daily') ?>>Harian</option>
-                                    <option value="weekly" <?= set_select('validity_period', 'weekly', $qr_code->validity_period == 'weekly') ?>>Mingguan</option>
-                                    <option value="monthly" <?= set_select('validity_period', 'monthly', $qr_code->validity_period == 'monthly') ?>>Bulanan</option>
-                                    <option value="yearly" <?= set_select('validity_period', 'yearly', $qr_code->validity_period == 'yearly') ?>>Tahunan</option>
+                                    <option value="unlimited" selected>Tidak Terbatas</option>
+                                    <option value="daily">Harian</option>
+                                    <option value="weekly">Mingguan</option>
+                                    <option value="monthly">Bulanan</option>
+                                    <option value="yearly">Tahunan</option>
                                 </select>
                                 <div class="form-text">
                                     Periode validitas QR Code
@@ -130,7 +132,7 @@
                                        class="form-control" 
                                        id="start_date" 
                                        name="start_date" 
-                                       value="<?= set_value('start_date', $qr_code->start_date ?: date('Y-m-d')) ?>">
+                                       value="<?= date('Y-m-d') ?>">
                                 <div class="form-text">
                                     Tanggal mulai QR Code dapat digunakan
                                 </div>
@@ -143,14 +145,14 @@
                                 <input type="date" 
                                        class="form-control" 
                                        id="end_date" 
-                                       name="end_date" 
-                                       value="<?= set_value('end_date', $qr_code->end_date) ?>">
+                                       name="end_date">
                                 <div class="form-text">
                                     Tanggal berakhir QR Code (kosongkan jika tidak terbatas)
                                 </div>
                             </div>
                         </div>
                     </div>
+                    -->
                     
                     <div class="mb-3">
                         <div class="form-check">
@@ -226,7 +228,7 @@
                         </tr>
                         <tr>
                             <td><strong>Dibuat Oleh:</strong></td>
-                            <td><?= $qr_code->created_by ? ($qr_code->creator_name ?: 'Admin') : 'System' ?></td>
+                            <td><?= $qr_code->created_by ? 'Admin' : 'System' ?></td>
                         </tr>
                     </table>
                 </div>
@@ -308,7 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Date validation
+    // Date validation - disabled karena field tidak tersedia di database
+    /*
     const startDate = document.getElementById('start_date');
     const endDate = document.getElementById('end_date');
     
@@ -324,5 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
             endDate.value = '';
         }
     });
+    */
 });
 </script>

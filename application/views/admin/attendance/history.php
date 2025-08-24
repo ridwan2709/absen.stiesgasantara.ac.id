@@ -400,12 +400,12 @@
                                                     $check_in_time = date('H:i', strtotime($record->check_in));
                                                     if ($check_in_time <= '07:30') {
                                                         echo '<span class="badge bg-success">Datang Awal</span>';
-                                                    } elseif ($check_in_time <= '08:00') {
+                                                    } elseif ($check_in_time <= '08:15') {
                                                         echo '<span class="badge bg-primary">Tepat Waktu</span>';
-                                                    } elseif ($check_in_time <= '08:30') {
+                                                    } elseif ($check_in_time <= '08:45') {
                                                         echo '<span class="badge bg-warning">Terlambat</span>';
                                                     } else {
-                                                        echo '<span class="badge bg-danger">Sangat Terlambat</span>';
+                                                        echo '<span class="badge bg-danger">Terlambat</span>';
                                                     }
                                                 ?>
                                             <?php else: ?>

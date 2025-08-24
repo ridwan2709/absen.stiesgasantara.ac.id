@@ -9,7 +9,7 @@ class Admin extends CI_Controller {
         $this->load->model('Attendance_model');
         $this->load->model('QRCode_model');
         $this->load->library('session');
-        $this->load->helper('url');
+        $this->load->helper(['url', 'form']);
         
         // Check if user is logged in and is admin
         if (!$this->session->userdata('logged_in')) {
