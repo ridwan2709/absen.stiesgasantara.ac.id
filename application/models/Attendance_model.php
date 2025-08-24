@@ -231,4 +231,178 @@ class Attendance_model extends CI_Model {
         $result = $this->db->get()->row();
         return $result ? $result->setting_value : null;
     }
+    
+    // Create lecturer attendance with subject and class info
+    public function create_lecturer_attendance($data) {
+        $this->db->insert('attendance', $data);
+        return $this->db->insert_id();
+    }
+    
+    // Get lecturer attendance for today with specific subject and class
+    public function get_lecturer_attendance_today($user_id, $subject, $class_name, $date) {
+        $this->db->select('*');
+        $this->db->from('attendance');
+        $this->db->where('user_id', $user_id);
+        $this->db->where('subject', $subject);
+        $this->db->where('class_name', $class_name);
+        $this->db->where('DATE(created_at)', $date);
+        return $this->db->get()->row();
+    }
+    
+    // Get lecturer attendance history with subject and class details
+    public function get_lecturer_attendance_history($user_id, $start_date = null, $end_date = null) {
+        $this->db->select('a.*, q.name as qr_name, q.location');
+        $this->db->from('attendance a');
+        $this->db->join('qr_codes q', 'q.id = a.qr_code_id');
+        $this->db->where('a.user_id', $user_id);
+        $this->db->where('a.subject IS NOT NULL'); // Only lecturer attendance
+        
+        if ($start_date && $end_date) {
+            $this->db->where('DATE(a.created_at) >=', $start_date);
+            $this->db->where('DATE(a.created_at) <=', $end_date);
+        }
+        
+        $this->db->order_by('a.created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    // Get lecturer teaching statistics
+    public function get_lecturer_teaching_stats($user_id, $start_date = null, $end_date = null) {
+        $this->db->select('COUNT(*) as total_classes');
+        $this->db->select('COUNT(DISTINCT subject) as total_subjects');
+        $this->db->select('COUNT(DISTINCT class_name) as total_class_names');
+        $this->db->select('COUNT(DISTINCT CONCAT(subject, "_", class_name)) as unique_subject_class');
+        $this->db->from('attendance');
+        $this->db->where('user_id', $user_id);
+        $this->db->where('subject IS NOT NULL');
+        
+        if ($start_date && $end_date) {
+            $this->db->where('DATE(created_at) >=', $start_date);
+            $this->db->where('DATE(created_at) <=', $end_date);
+        }
+        
+        return $this->db->get()->row();
+    }
+    
+    // Get subject and class list for a lecturer
+    public function get_lecturer_subjects_classes($user_id, $start_date = null, $end_date = null) {
+        $this->db->select('subject, class_name, COUNT(*) as total_sessions');
+        $this->db->select('MIN(created_at) as first_session');
+        $this->db->select('MAX(created_at) as last_session');
+        $this->db->from('attendance');
+        $this->db->where('user_id', $user_id);
+        $this->db->where('subject IS NOT NULL');
+        
+        if ($start_date && $end_date) {
+            $this->db->where('DATE(created_at) >=', $start_date);
+            $this->db->where('DATE(created_at) <=', $end_date);
+        }
+        
+        $this->db->group_by(['subject', 'class_name']);
+        $this->db->order_by('subject', 'ASC');
+        $this->db->order_by('class_name', 'ASC');
+        
+        return $this->db->get()->result();
+    }
+    
+    // Get all lecturer attendance records (for admin reports)
+    public function get_all_lecturer_attendance($start_date = null, $end_date = null) {
+        $this->db->select('a.*, u.full_name, u.nip_nidn, q.name as qr_name, q.location');
+        $this->db->from('attendance a');
+        $this->db->join('users u', 'u.id = a.user_id');
+        $this->db->join('qr_codes q', 'q.id = a.qr_code_id');
+        $this->db->where('u.role', 'dosen');
+        $this->db->where('a.subject IS NOT NULL');
+        
+        if ($start_date && $end_date) {
+            $this->db->where('DATE(a.created_at) >=', $start_date);
+            $this->db->where('DATE(a.created_at) <=', $end_date);
+        }
+        
+        $this->db->order_by('a.created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    // Get all unique subjects from attendance
+    public function get_all_subjects() {
+        $this->db->select('DISTINCT subject');
+        $this->db->from('attendance');
+        $this->db->where('subject IS NOT NULL');
+        $this->db->where('subject !=', '');
+        $this->db->order_by('subject', 'ASC');
+        return $this->db->get()->result();
+    }
+    
+    // Get filtered lecturer attendance
+    public function get_filtered_lecturer_attendance($start_date, $end_date, $lecturer_id = '', $subject = '') {
+        $this->db->select('a.*, u.full_name, u.nip_nidn, q.name as qr_name, q.location');
+        $this->db->from('attendance a');
+        $this->db->join('users u', 'u.id = a.user_id');
+        $this->db->join('qr_codes q', 'q.id = a.qr_code_id');
+        $this->db->where('u.role', 'dosen');
+        $this->db->where('a.subject IS NOT NULL');
+        $this->db->where('DATE(a.created_at) >=', $start_date);
+        $this->db->where('DATE(a.created_at) <=', $end_date);
+        
+        if ($lecturer_id) {
+            $this->db->where('a.user_id', $lecturer_id);
+        }
+        
+        if ($subject) {
+            $this->db->where('a.subject', $subject);
+        }
+        
+        $this->db->order_by('a.created_at', 'DESC');
+        return $this->db->get()->result();
+    }
+    
+    // Get lecturer summary statistics
+    public function get_lecturer_summary_stats($start_date, $end_date, $lecturer_id = '', $subject = '') {
+        $this->db->select('COUNT(*) as total_sessions');
+        $this->db->select('COUNT(DISTINCT a.subject) as total_subjects');
+        $this->db->select('COUNT(DISTINCT a.class_name) as total_classes');
+        $this->db->select('COUNT(DISTINCT a.user_id) as active_lecturers');
+        $this->db->from('attendance a');
+        $this->db->join('users u', 'u.id = a.user_id');
+        $this->db->where('u.role', 'dosen');
+        $this->db->where('a.subject IS NOT NULL');
+        $this->db->where('DATE(a.created_at) >=', $start_date);
+        $this->db->where('DATE(a.created_at) <=', $end_date);
+        
+        if ($lecturer_id) {
+            $this->db->where('a.user_id', $lecturer_id);
+        }
+        
+        if ($subject) {
+            $this->db->where('a.subject', $subject);
+        }
+        
+        return $this->db->get()->row();
+    }
+    
+    // Get subject summary statistics
+    public function get_subject_summary_stats($start_date, $end_date, $lecturer_id = '') {
+        $days_diff = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24) + 1;
+        
+        $this->db->select('a.subject');
+        $this->db->select('COUNT(DISTINCT a.class_name) as total_classes');
+        $this->db->select('COUNT(*) as total_sessions');
+        $this->db->select('COUNT(DISTINCT a.user_id) as lecturer_count');
+        $this->db->select('ROUND(COUNT(*) / ' . $days_diff . ', 1) as avg_sessions_per_day');
+        $this->db->from('attendance a');
+        $this->db->join('users u', 'u.id = a.user_id');
+        $this->db->where('u.role', 'dosen');
+        $this->db->where('a.subject IS NOT NULL');
+        $this->db->where('DATE(a.created_at) >=', $start_date);
+        $this->db->where('DATE(a.created_at) <=', $end_date);
+        
+        if ($lecturer_id) {
+            $this->db->where('a.user_id', $lecturer_id);
+        }
+        
+        $this->db->group_by('a.subject');
+        $this->db->order_by('total_sessions', 'DESC');
+        
+        return $this->db->get()->result();
+    }
 }

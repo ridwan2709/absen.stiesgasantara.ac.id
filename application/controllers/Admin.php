@@ -484,4 +484,102 @@ class Admin extends CI_Controller {
         
         fclose($output);
     }
+    
+    // Lecturer Report
+    public function lecturer_report() {
+        $data['title'] = 'Laporan Absensi Dosen';
+        
+        // Date range
+        $start_date = $this->input->get('start_date') ?: date('Y-m-01');
+        $end_date = $this->input->get('end_date') ?: date('Y-m-d');
+        $selected_lecturer = $this->input->get('lecturer') ?: '';
+        $selected_subject = $this->input->get('subject') ?: '';
+        
+        $data['start_date'] = $start_date;
+        $data['end_date'] = $end_date;
+        $data['selected_lecturer'] = $selected_lecturer;
+        $data['selected_subject'] = $selected_subject;
+        
+        // Get all lecturers
+        $data['lecturers'] = $this->User_model->get_users_by_role('dosen');
+        
+        // Get all subjects
+        $data['subjects'] = $this->Attendance_model->get_all_subjects();
+        
+        // Get lecturer attendance with filters
+        $data['lecturer_attendance'] = $this->Attendance_model->get_filtered_lecturer_attendance(
+            $start_date, $end_date, $selected_lecturer, $selected_subject
+        );
+        
+        // Summary statistics
+        $data['summary'] = $this->Attendance_model->get_lecturer_summary_stats(
+            $start_date, $end_date, $selected_lecturer, $selected_subject
+        );
+        
+        // Subject summary
+        $data['subject_summary'] = $this->Attendance_model->get_subject_summary_stats(
+            $start_date, $end_date, $selected_lecturer
+        );
+        
+        $this->load->view('templates/header', $data);
+        $this->load->view('admin/reports/lecturer_report', $data);
+        $this->load->view('templates/footer');
+    }
+    
+    // Export lecturer report to CSV
+    public function export_lecturer_report() {
+        $start_date = $this->input->get('start_date') ?: date('Y-m-01');
+        $end_date = $this->input->get('end_date') ?: date('Y-m-d');
+        $selected_lecturer = $this->input->get('lecturer') ?: '';
+        $selected_subject = $this->input->get('subject') ?: '';
+        
+        $data = $this->Attendance_model->get_filtered_lecturer_attendance(
+            $start_date, $end_date, $selected_lecturer, $selected_subject
+        );
+        
+        // Set headers for CSV download
+        $filename = 'laporan_dosen_' . date('Y-m-d_H-i-s') . '.csv';
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        // Create file pointer
+        $output = fopen('php://output', 'w');
+        
+        // Add BOM for UTF-8
+        fputs($output, "\xEF\xBB\xBF");
+        
+        // CSV Headers
+        fputcsv($output, [
+            'No',
+            'Tanggal',
+            'Dosen',
+            'NIP/NIDN',
+            'Mata Kuliah',
+            'Kelas',
+            'Waktu',
+            'Status',
+            'Lokasi',
+            'Keterangan'
+        ]);
+        
+        // CSV Data
+        $no = 1;
+        foreach ($data as $record) {
+            fputcsv($output, [
+                $no++,
+                date('d/m/Y', strtotime($record->created_at)),
+                $record->full_name,
+                $record->nip_nidn ?: '-',
+                $record->subject,
+                $record->class_name,
+                date('H:i', strtotime($record->check_in)),
+                $record->status == 'present' ? 'Tepat Waktu' : 
+                    ($record->status == 'late' ? 'Terlambat' : ucfirst($record->status)),
+                $record->location,
+                $record->lecture_notes ?: '-'
+            ]);
+        }
+        
+        fclose($output);
+    }
 }

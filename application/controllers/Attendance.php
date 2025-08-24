@@ -8,7 +8,7 @@ class Attendance extends CI_Controller {
         $this->load->model('Attendance_model');
         $this->load->model('QRCode_model');
         $this->load->library('session');
-        $this->load->helper('url');
+        $this->load->helper(['url', 'form']);
         
         // Check if user is logged in
         if (!$this->session->userdata('logged_in')) {
@@ -16,7 +16,174 @@ class Attendance extends CI_Controller {
         }
     }
     
-    // Check in process
+    // Process QR scan and redirect based on user role
+    public function process_qr_scan() {
+        $response = array('success' => false, 'message' => '', 'redirect' => '');
+        
+        if ($this->input->post()) {
+            $qr_code = $this->input->post('qr_code');
+            $user_id = $this->session->userdata('user_id');
+            $user_role = $this->session->userdata('role');
+            
+            if (empty($qr_code)) {
+                $response['message'] = 'QR Code tidak valid';
+                echo json_encode($response);
+                return;
+            }
+            
+            // Verify QR code
+            $qr_data = $this->QRCode_model->get_qr_code_by_code($qr_code);
+            if (!$qr_data) {
+                $response['message'] = 'QR Code tidak valid atau sudah tidak aktif';
+                echo json_encode($response);
+                return;
+            }
+            
+            // Store QR data in session for later use
+            $this->session->set_userdata('temp_qr_data', $qr_data);
+            
+            // Check user role and redirect accordingly
+            if ($user_role == 'dosen') {
+                // For lecturers, redirect to attendance form
+                $response['success'] = true;
+                $response['message'] = 'QR Code valid. Silakan isi detail absensi.';
+                $response['redirect'] = base_url('attendance/lecturer_form');
+            } else {
+                // For staff, process directly
+                $response = $this->process_staff_attendance($user_id, $qr_data);
+            }
+        }
+        
+        echo json_encode($response);
+    }
+    
+    // Process staff attendance (original check_in logic)
+    private function process_staff_attendance($user_id, $qr_data) {
+        $response = array('success' => false, 'message' => '');
+        
+        // Check if user already has attendance today
+        $today_attendance = $this->Attendance_model->get_attendance_by_user_date($user_id, date('Y-m-d'));
+        
+        if ($today_attendance) {
+            if ($today_attendance->check_out) {
+                $response['message'] = 'Anda sudah melakukan absensi masuk dan pulang hari ini';
+            } else {
+                $response['message'] = 'Anda sudah melakukan absensi masuk hari ini';
+            }
+            return $response;
+        }
+        
+        // Create check-in record
+        $attendance_id = $this->Attendance_model->create_check_in($user_id, $qr_data->id);
+        
+        if ($attendance_id) {
+            $response['success'] = true;
+            $response['message'] = 'Absensi masuk berhasil dicatat';
+            $response['attendance_id'] = $attendance_id;
+            $response['check_in_time'] = date('Y-m-d H:i:s');
+        } else {
+            $response['message'] = 'Gagal mencatat absensi masuk';
+        }
+        
+        return $response;
+    }
+    
+    // Show lecturer attendance form
+    public function lecturer_form() {
+        // Check if user is lecturer
+        if ($this->session->userdata('role') !== 'dosen') {
+            redirect('dashboard');
+        }
+        
+        // Check if QR data exists in session
+        $qr_data = $this->session->userdata('temp_qr_data');
+        if (!$qr_data) {
+            $this->session->set_flashdata('error', 'Sesi QR Code telah berakhir. Silakan scan ulang.');
+            redirect('dashboard/scan_qr');
+        }
+        
+        $data['title'] = 'Detail Absensi Mengajar';
+        $data['qr_data'] = $qr_data;
+        
+        $this->load->view('templates/header', $data);
+        $this->load->view('attendance/lecturer_form', $data);
+        $this->load->view('templates/footer');
+    }
+    
+    // Process lecturer attendance with additional details
+    public function submit_lecturer_attendance() {
+        $response = array('success' => false, 'message' => '');
+        
+        // Check if user is lecturer
+        if ($this->session->userdata('role') !== 'dosen') {
+            $response['message'] = 'Akses ditolak';
+            echo json_encode($response);
+            return;
+        }
+        
+        if ($this->input->post()) {
+            $this->form_validation->set_rules('subject', 'Mata Kuliah', 'required|trim');
+            $this->form_validation->set_rules('class_name', 'Kelas', 'required|trim');
+            $this->form_validation->set_rules('lecture_notes', 'Keterangan', 'trim');
+            
+            if ($this->form_validation->run() == FALSE) {
+                $response['message'] = 'Mohon lengkapi semua field yang wajib diisi';
+                echo json_encode($response);
+                return;
+            }
+            
+            $user_id = $this->session->userdata('user_id');
+            $qr_data = $this->session->userdata('temp_qr_data');
+            
+            if (!$qr_data) {
+                $response['message'] = 'Sesi QR Code telah berakhir. Silakan scan ulang.';
+                echo json_encode($response);
+                return;
+            }
+            
+            // Check if lecturer already has attendance for this subject and class today
+            $today_attendance = $this->Attendance_model->get_lecturer_attendance_today(
+                $user_id, 
+                $this->input->post('subject'),
+                $this->input->post('class_name'),
+                date('Y-m-d')
+            );
+            
+            if ($today_attendance) {
+                $response['message'] = 'Anda sudah melakukan absensi untuk mata kuliah dan kelas ini hari ini';
+                echo json_encode($response);
+                return;
+            }
+            
+            // Create lecturer attendance record
+            $attendance_data = array(
+                'user_id' => $user_id,
+                'qr_code_id' => $qr_data->id,
+                'check_in' => date('Y-m-d H:i:s'),
+                'status' => $this->determine_status(),
+                'subject' => $this->input->post('subject'),
+                'class_name' => $this->input->post('class_name'),
+                'lecture_notes' => $this->input->post('lecture_notes'),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            );
+            
+            if ($this->Attendance_model->create_lecturer_attendance($attendance_data)) {
+                // Clear temp QR data
+                $this->session->unset_userdata('temp_qr_data');
+                
+                $response['success'] = true;
+                $response['message'] = 'Absensi mengajar berhasil dicatat';
+                $response['redirect'] = base_url('dashboard');
+            } else {
+                $response['message'] = 'Gagal mencatat absensi mengajar';
+            }
+        }
+        
+        echo json_encode($response);
+    }
+    
+    // Legacy method for staff check-in (keep for compatibility)
     public function check_in() {
         $response = array('success' => false, 'message' => '');
         
@@ -38,33 +205,40 @@ class Attendance extends CI_Controller {
                 return;
             }
             
-            // Check if user already has attendance today
-            $today_attendance = $this->Attendance_model->get_attendance_by_user_date($user_id, date('Y-m-d'));
-            
-            if ($today_attendance) {
-                if ($today_attendance->check_out) {
-                    $response['message'] = 'Anda sudah melakukan absensi masuk dan pulang hari ini';
-                } else {
-                    $response['message'] = 'Anda sudah melakukan absensi masuk hari ini';
-                }
-                echo json_encode($response);
-                return;
-            }
-            
-            // Create check-in record
-            $attendance_id = $this->Attendance_model->create_check_in($user_id, $qr_data->id);
-            
-            if ($attendance_id) {
-                $response['success'] = true;
-                $response['message'] = 'Absensi masuk berhasil dicatat';
-                $response['attendance_id'] = $attendance_id;
-                $response['check_in_time'] = date('Y-m-d H:i:s');
-            } else {
-                $response['message'] = 'Gagal mencatat absensi masuk';
-            }
+            $response = $this->process_staff_attendance($user_id, $qr_data);
         }
         
         echo json_encode($response);
+    }
+    
+    // Determine attendance status based on time
+    private function determine_status() {
+        $current_time = date('H:i:s');
+        $work_start = $this->get_setting('work_start_time');
+        $late_threshold = $this->get_setting('late_threshold');
+        
+        if ($current_time <= $work_start) {
+            return 'present';
+        } else {
+            $start_time = strtotime($work_start);
+            $current_timestamp = strtotime($current_time);
+            $diff_minutes = ($current_timestamp - $start_time) / 60;
+            
+            if ($diff_minutes <= $late_threshold) {
+                return 'late';
+            } else {
+                return 'late';
+            }
+        }
+    }
+    
+    // Get setting value
+    private function get_setting($key) {
+        $this->db->select('setting_value');
+        $this->db->from('settings');
+        $this->db->where('setting_key', $key);
+        $result = $this->db->get()->row();
+        return $result ? $result->setting_value : null;
     }
     
     // Check out process

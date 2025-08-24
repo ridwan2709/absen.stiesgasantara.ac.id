@@ -49,60 +49,118 @@
                 </h5>
             </div>
             <div class="card-body">
-                <?php if ($today_attendance): ?>
-                    <?php if ($today_attendance->check_in && !$today_attendance->check_out): ?>
-                        <div class="alert alert-success">
-                            <h6 class="alert-heading">
-                                <i class="fas fa-check-circle me-2"></i>
-                                Sudah Absen Masuk
-                            </h6>
-                            <p class="mb-2">
-                                <strong>Waktu Masuk:</strong><br>
-                                <?= date('H:i', strtotime($today_attendance->check_in)) ?>
-                            </p>
-                            <p class="mb-0">
-                                <strong>Status:</strong>
-                                <span class="badge bg-success"><?= ucfirst($today_attendance->status) ?></span>
-                            </p>
-                        </div>
-                        
-                        <div class="text-center">
-                            <button class="btn btn-warning btn-lg w-100" id="checkOutBtn">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Absen Pulang
-                            </button>
-                        </div>
-                        
-                    <?php elseif ($today_attendance->check_in && $today_attendance->check_out): ?>
-                        <div class="alert alert-info">
-                            <h6 class="alert-heading">
-                                <i class="fas fa-clock me-2"></i>
-                                Absensi Selesai
-                            </h6>
-                            <p class="mb-2">
-                                <strong>Waktu Masuk:</strong> <?= date('H:i', strtotime($today_attendance->check_in)) ?><br>
-                                <strong>Waktu Pulang:</strong> <?= date('H:i', strtotime($today_attendance->check_out)) ?><br>
-                                <strong>Total Jam:</strong> <?= $today_attendance->work_hours ?> jam
-                            </p>
-                        </div>
-                        
-                        <div class="text-center">
-                            <div class="alert alert-warning">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Anda telah menyelesaikan absensi hari ini
+                <?php if ($this->session->userdata('role') == 'dosen'): ?>
+                    <!-- Lecturer specific status -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>
+                            Mode Dosen
+                        </h6>
+                        <p class="mb-0">
+                            Scan QR code untuk absensi mengajar. Anda akan diminta mengisi detail mata kuliah dan kelas setelah scan.
+                        </p>
+                    </div>
+                    
+                    <!-- Show today's teaching sessions if any -->
+                    <?php 
+                    $today_lectures = $this->Attendance_model->get_lecturer_attendance_history(
+                        $this->session->userdata('user_id'), 
+                        date('Y-m-d'), 
+                        date('Y-m-d')
+                    );
+                    ?>
+                    
+                    <?php if (!empty($today_lectures)): ?>
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Absensi Mengajar Hari Ini
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <?php foreach ($today_lectures as $lecture): ?>
+                                    <div class="border rounded p-2 mb-2">
+                                        <div class="row">
+                                            <div class="col-8">
+                                                <strong><?= $lecture->subject ?></strong><br>
+                                                <small class="text-muted">Kelas: <?= $lecture->class_name ?></small>
+                                            </div>
+                                            <div class="col-4 text-end">
+                                                <small class="text-success">
+                                                    <?= date('H:i', strtotime($lecture->check_in)) ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <?php if ($lecture->lecture_notes): ?>
+                                            <small class="text-muted d-block mt-1">
+                                                <i class="fas fa-sticky-note me-1"></i>
+                                                <?= $lecture->lecture_notes ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
                     <?php endif; ?>
+                    
                 <?php else: ?>
-                    <div class="alert alert-warning">
-                        <h6 class="alert-heading">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Belum Absen
-                        </h6>
-                        <p class="mb-0">
-                            Anda belum melakukan absensi hari ini. Silakan scan QR code untuk absen masuk.
-                        </p>
-                    </div>
+                    <!-- Staff specific status -->
+                    <?php if ($today_attendance): ?>
+                        <?php if ($today_attendance->check_in && !$today_attendance->check_out): ?>
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Sudah Absen Masuk
+                                </h6>
+                                <p class="mb-2">
+                                    <strong>Waktu Masuk:</strong><br>
+                                    <?= date('H:i', strtotime($today_attendance->check_in)) ?>
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Status:</strong>
+                                    <span class="badge bg-success"><?= ucfirst($today_attendance->status) ?></span>
+                                </p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button class="btn btn-warning btn-lg w-100" id="checkOutBtn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Absen Pulang
+                                </button>
+                            </div>
+                            
+                        <?php elseif ($today_attendance->check_in && $today_attendance->check_out): ?>
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Absensi Selesai
+                                </h6>
+                                <p class="mb-2">
+                                    <strong>Waktu Masuk:</strong> <?= date('H:i', strtotime($today_attendance->check_in)) ?><br>
+                                    <strong>Waktu Pulang:</strong> <?= date('H:i', strtotime($today_attendance->check_out)) ?><br>
+                                    <strong>Total Jam:</strong> <?= $today_attendance->work_hours ?> jam
+                                </p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Anda telah menyelesaikan absensi hari ini
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Belum Absen
+                            </h6>
+                            <p class="mb-0">
+                                Anda belum melakukan absensi hari ini. Silakan scan QR code untuk absen masuk.
+                            </p>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -192,6 +250,11 @@
     </div>
 </div>
 
+<!-- Include jQuery if not already included -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Include HTML5 QR Code Scanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 <script>
 let html5QrcodeScanner = null;
 let isScanning = false;
@@ -252,45 +315,57 @@ function onScanFailure(error) {
 
 // Process QR Code
 function processQRCode(qrCode) {
+    const userRole = '<?= $this->session->userdata('role') ?>';
     const todayAttendance = <?= json_encode($today_attendance) ?>;
     
-    if (todayAttendance) {
+    // For lecturers or new attendance, use new process_qr_scan endpoint
+    if (userRole === 'dosen' || !todayAttendance) {
+        performQRScan(qrCode);
+    } else if (todayAttendance) {
         if (todayAttendance.check_in && !todayAttendance.check_out) {
-            // Check out
+            // Check out for staff
             performCheckOut(qrCode);
         } else if (todayAttendance.check_in && todayAttendance.check_out) {
             showError('Anda telah menyelesaikan absensi hari ini');
         }
-    } else {
-        // Check in
-        performCheckIn(qrCode);
     }
 }
 
-// Perform check in
-function performCheckIn(qrCode) {
+// Perform QR scan (new unified endpoint)
+function performQRScan(qrCode) {
     $.ajax({
-        url: '<?= base_url('attendance/check_in') ?>',
+        url: '<?= base_url('attendance/process_qr_scan') ?>',
         type: 'POST',
         data: { qr_code: qrCode },
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                showSuccessModal('Absensi masuk berhasil dicatat!', 
-                    'Waktu masuk: ' + response.check_in_time);
-                
-                // Reload page after 2 seconds
-                setTimeout(function() {
-                    location.reload();
-                }, 2000);
+                if (response.redirect) {
+                    // Redirect to lecturer form
+                    window.location.href = response.redirect;
+                } else {
+                    // Show success for staff
+                    showSuccessModal('Absensi masuk berhasil dicatat!', 
+                        'Waktu masuk: ' + response.check_in_time);
+                    
+                    // Reload page after 2 seconds
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                }
             } else {
                 showError(response.message);
             }
         },
         error: function() {
-            console.log('Terjadi kesalahan pada server. Silakan coba lagi.');
+            showError('Terjadi kesalahan pada server. Silakan coba lagi.');
         }
     });
+}
+
+// Legacy check in for staff (fallback)
+function performCheckIn(qrCode) {
+    performQRScan(qrCode);
 }
 
 // Perform check out

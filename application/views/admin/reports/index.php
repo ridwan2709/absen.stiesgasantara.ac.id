@@ -74,6 +74,26 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    Laporan Dosen
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Laporan khusus absensi mengajar dosen dengan detail mata kuliah dan kelas.
+                </p>
+                <a href="<?= base_url('admin/lecturer_report') ?>" class="btn btn-info w-100">
+                    <i class="fas fa-eye me-2"></i>
+                    Lihat Laporan
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
                     <i class="fas fa-upload me-2"></i>
                     Import Data
                 </h5>
@@ -82,9 +102,9 @@
                 <p class="text-muted">
                     Import data absensi dari file CSV atau input manual untuk data yang tidak terekam.
                 </p>
-                <a href="<?= base_url('admin/daily_report') ?>" class="btn btn-success w-100">
-                    <i class="fas fa-calendar-day me-2"></i>
-                    Laporan Harian
+                <a href="<?= base_url('attendance/manual_entry') ?>" class="btn btn-success w-100">
+                    <i class="fas fa-keyboard me-2"></i>
+                    Input Manual
                 </a>
             </div>
         </div>
