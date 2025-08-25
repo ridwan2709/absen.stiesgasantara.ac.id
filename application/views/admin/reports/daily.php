@@ -19,6 +19,44 @@
     </div>
 </div>
 
+<style>
+.attendance-image {
+    transition: transform 0.2s ease-in-out;
+    border: 2px solid #dee2e6;
+}
+
+.attendance-image:hover {
+    transform: scale(1.05);
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.subject-badge {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.modal-image {
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .attendance-image {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .subject-badge {
+        font-size: 0.7rem;
+    }
+}
+</style>
+
 <!-- Filter Section -->
 <div class="row mb-4">
     <div class="col-12">
@@ -125,6 +163,8 @@
                                     <th>Jam Kerja</th>
                                     <th>Status</th>
                                     <th>Lokasi</th>
+                                    <th>Mata Kuliah</th>
+                                    <th>Foto</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -191,6 +231,31 @@
                                         </td>
                                         <td>
                                             <small class="text-muted"><?= $row->location ?: 'N/A' ?></small>
+                                        </td>
+                                        <td>
+                                            <?php if ($row->subject): ?>
+                                                <div class="mb-1">
+                                                    <small class="badge bg-info subject-badge">
+                                                        <?= $row->subject ?>
+                                                        <?php if ($row->class_name): ?>
+                                                            (<?= $row->class_name ?>)
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($row->lecture_photo): ?>
+                                                <img src="<?= base_url($row->lecture_photo) ?>" 
+                                                     alt="Foto Kuliah" 
+                                                     class="img-thumbnail attendance-image" 
+                                                     style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                                     onclick="showImageModal('<?= base_url($row->lecture_photo) ?>', '<?= $row->lecture_photo ?>')">
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -314,6 +379,28 @@
     </div>
 </div>
 
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Foto Kuliah</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Foto Kuliah" class="img-fluid modal-image">
+                <p class="mt-2 text-muted" id="modalImageName"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <a id="downloadImage" href="" download class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize DataTable
@@ -323,8 +410,21 @@ document.addEventListener('DOMContentLoaded', function() {
             order: [[4, 'asc']], // Sort by check-in time
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
-            }
+            },
+            columnDefs: [
+                { targets: [9, 10], orderable: false } // Disable sorting for image and subject columns
+            ]
         });
     }
 });
+
+// Function to show image modal
+function showImageModal(imageSrc, imageName) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('modalImageName').textContent = imageName;
+    document.getElementById('downloadImage').href = imageSrc;
+    
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
+}
 </script>

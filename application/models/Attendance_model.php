@@ -87,6 +87,9 @@ class Attendance_model extends CI_Model {
         $this->db->select('SUM(CASE WHEN a.status = "late" THEN 1 ELSE 0 END) as late_days');
         $this->db->select('SUM(CASE WHEN a.status = "absent" THEN 1 ELSE 0 END) as absent_days');
         $this->db->select('SUM(a.work_hours) as total_hours');
+        $this->db->select('GROUP_CONCAT(DISTINCT a.subject) as subjects');
+        $this->db->select('GROUP_CONCAT(DISTINCT a.class_name) as class_names');
+        $this->db->select('GROUP_CONCAT(DISTINCT a.lecture_photo) as photos');
         $this->db->from('users u');
         $this->db->join('attendance a', 'u.id = a.user_id', 'left');
         $this->db->where('u.role !=', 'admin');
@@ -123,7 +126,7 @@ class Attendance_model extends CI_Model {
     
     // Get daily report for specific date
     public function get_daily_report($date) {
-        $this->db->select('a.*, u.full_name, u.department, u.role, q.location');
+        $this->db->select('a.*, u.full_name, u.department, u.role, q.location, a.subject, a.class_name, a.lecture_photo');
         $this->db->from('attendance a');
         $this->db->join('users u', 'u.id = a.user_id');
         $this->db->join('qr_codes q', 'q.id = a.qr_code_id', 'left');
@@ -150,12 +153,18 @@ class Attendance_model extends CI_Model {
                 $user->check_in = $attendance->check_in;
                 $user->check_out = $attendance->check_out;
                 $user->work_hours = $attendance->work_hours;
+                $user->subject = $attendance->subject;
+                $user->class_name = $attendance->class_name;
+                $user->lecture_photo = $attendance->lecture_photo;
                 $user->status = $attendance->status;
                 $user->location = $attendance->location;
             } else {
                 $user->check_in = null;
                 $user->check_out = null;
                 $user->work_hours = null;
+                $user->subject = null;
+                $user->class_name = null;
+                $user->lecture_photo = null;
                 $user->status = 'absent';
                 $user->location = null;
             }

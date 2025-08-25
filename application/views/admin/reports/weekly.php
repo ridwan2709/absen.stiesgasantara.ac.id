@@ -136,6 +136,8 @@
                                     <th>Tidak Hadir</th>
                                     <th>Total Jam</th>
                                     <th>Persentase</th>
+                                    <th>Mata Kuliah</th>
+                                    <th>Foto</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -197,6 +199,48 @@
                                                 <span class="badge bg-danger"><?= $attendance_percentage ?>%</span>
                                             <?php endif; ?>
                                         </td>
+                                        <td>
+                                            <?php if ($row->subjects): ?>
+                                                <?php 
+                                                    $subjects = explode(',', $row->subjects);
+                                                    $class_names = explode(',', $row->class_names);
+                                                    foreach ($subjects as $index => $subject):
+                                                        $class_name = isset($class_names[$index]) ? $class_names[$index] : '';
+                                                ?>
+                                                    <div class="mb-1">
+                                                        <small class="badge bg-info subject-badge">
+                                                            <?= trim($subject) ?>
+                                                            <?php if ($class_name): ?>
+                                                                (<?= trim($class_name) ?>)
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($row->photos): ?>
+                                                <?php 
+                                                    $photos = explode(',', $row->photos);
+                                                    foreach ($photos as $photo):
+                                                        if (trim($photo)):
+                                                ?>
+                                                    <div class="mb-1">
+                                                        <img src="<?= base_url(trim($photo)) ?>" 
+                                                             alt="Foto Kuliah" 
+                                                             class="img-thumbnail attendance-image"
+                                                             onclick="showImageModal('<?= base_url(trim($photo)) ?>', '<?= trim($photo) ?>')">
+                                                    </div>
+                                                <?php 
+                                                        endif;
+                                                    endforeach; 
+                                                ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -233,6 +277,28 @@
             </div>
             <div class="card-body">
                 <canvas id="departmentChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Foto Kuliah</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Foto Kuliah" class="img-fluid modal-image">
+                <p class="mt-2 text-muted" id="modalImageName"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <a id="downloadImage" href="" download class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Download
+                </a>
             </div>
         </div>
     </div>
@@ -334,8 +400,21 @@ document.addEventListener('DOMContentLoaded', function() {
             order: [[4, 'desc']],
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
-            }
+            },
+            columnDefs: [
+                { targets: [10, 11], orderable: false } // Disable sorting for image and subject columns
+            ]
         });
     }
 });
+
+// Function to show image modal
+function showImageModal(imageSrc, imageName) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('modalImageName').textContent = imageName;
+    document.getElementById('downloadImage').href = imageSrc;
+    
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
+}
 </script>
