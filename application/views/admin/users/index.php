@@ -99,6 +99,13 @@
                                             <i class="fas fa-chart-bar"></i>
                                         </a>
                                         
+                                        <a href="<?= base_url('dashboard/attendance_history?user_id=' . $user->id) ?>" 
+                                           class="btn btn-sm btn-outline-secondary" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Riwayat Absensi">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                        
                                         <?php if ($user->is_active): ?>
                                             <button type="button" 
                                                     class="btn btn-sm btn-outline-warning" 

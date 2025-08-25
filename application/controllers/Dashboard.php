@@ -57,7 +57,7 @@ class Dashboard extends CI_Controller {
     }
     
     private function get_recent_attendance($limit = 10) {
-        $this->db->select('a.*, u.full_name, u.department, q.name as qr_name');
+        $this->db->select('a.*, u.full_name, u.role, u.department, q.name as qr_name');
         $this->db->from('attendance a');
         $this->db->join('users u', 'u.id = a.user_id');
         $this->db->join('qr_codes q', 'q.id = a.qr_code_id');
@@ -176,17 +176,44 @@ class Dashboard extends CI_Controller {
         $start_date = $this->input->get('start_date') ?: date('Y-m-01');
         $end_date = $this->input->get('end_date') ?: date('Y-m-t');
         
+        // Check if user is admin or regular user
+        $is_admin = ($data['user']['role'] === 'admin');
+        
+        // If admin, allow viewing other users' history
+        if ($is_admin && $this->input->get('user_id')) {
+            $user_id = $this->input->get('user_id');
+            // Verify the user exists and is not admin
+            $this->load->model('User_model');
+            $target_user = $this->User_model->get_user_by_id($user_id);
+            if (!$target_user || $target_user->role === 'admin') {
+                show_404();
+            }
+            $data['target_user'] = $target_user;
+        } else {
+            // Regular users can only see their own history
+            $user_id = $data['user']['user_id'];
+            $data['target_user'] = null;
+        }
+        
         $data['start_date'] = $start_date;
         $data['end_date'] = $end_date;
+        $data['is_admin'] = $is_admin;
         $data['attendance_history'] = $this->Attendance_model->get_user_attendance_history(
-            $data['user']['user_id'],
+            $user_id,
             $start_date,
             $end_date
         );
         
-        $this->load->view('templates/header', $data);
-        $this->load->view('admin/attendance/index', $data);
-        $this->load->view('templates/footer');
+        // Load different view based on user role
+        if ($is_admin) {
+            $this->load->view('templates/header', $data);
+            $this->load->view('admin/attendance/history', $data);
+            $this->load->view('templates/footer');
+        } else {
+            $this->load->view('templates/header', $data);
+            $this->load->view('dashboard/attendance_history', $data);
+            $this->load->view('templates/footer');
+        }
     }
     
     public function scan_qr() {

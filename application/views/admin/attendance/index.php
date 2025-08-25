@@ -6,9 +6,13 @@
                 Manajemen Absensi
             </h1>
             <div>
-                <a href="<?= base_url('admin/attendance/manual_entry') ?>" class="btn btn-primary me-2">
+                <!-- <a href="<?= base_url('admin/attendance/manual_entry') ?>" class="btn btn-primary me-2">
                     <i class="fas fa-plus me-2"></i>
                     Input Manual
+                </a> -->
+                <a href="<?= base_url('dashboard/attendance_history') ?>" class="btn btn-info me-2">
+                    <i class="fas fa-history me-2"></i>
+                    Riwayat Absensi
                 </a>
                 <a href="<?= base_url('admin/attendance/export') ?>" class="btn btn-success">
                     <i class="fas fa-download me-2"></i>

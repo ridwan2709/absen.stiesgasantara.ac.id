@@ -100,11 +100,31 @@
             </div>
             <div class="card-body">
                 <p class="text-muted">
-                    Import data absensi dari file CSV atau input manual untuk data yang tidak terekam.
+                    Import data absensi dari file CSV untuk data yang tidak terekam otomatis.
                 </p>
-                <a href="<?= base_url('attendance/manual_entry') ?>" class="btn btn-success w-100">
-                    <i class="fas fa-keyboard me-2"></i>
-                    Input Manual
+                <a href="<?= base_url('admin/bulk_import') ?>" class="btn btn-warning w-100">
+                    <i class="fas fa-upload me-2"></i>
+                    Import CSV
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Riwayat Absensi
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Lihat riwayat absensi detail untuk pengguna tertentu dengan filter periode.
+                </p>
+                <a href="<?= base_url('dashboard/attendance_history') ?>" class="btn btn-info w-100">
+                    <i class="fas fa-eye me-2"></i>
+                    Lihat Riwayat
                 </a>
             </div>
         </div>

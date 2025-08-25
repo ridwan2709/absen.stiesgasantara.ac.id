@@ -268,18 +268,15 @@
                 <div class="card-body">
                     <?php if ($weekly_summary): ?>
                         <div class="row text-center">
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="h3 text-success"><?= $weekly_summary->present_days ?></div>
                                 <div class="text-muted">Hadir</div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="h3 text-warning"><?= $weekly_summary->late_days ?></div>
                                 <div class="text-muted">Terlambat</div>
                             </div>
-                            <div class="col-4">
-                                <div class="h3 text-primary"><?= $weekly_summary->total_hours ?></div>
-                                <div class="text-muted">Total Jam</div>
-                            </div>
+                            
                         </div>
                     <?php else: ?>
                         <div class="text-center text-muted py-4">
@@ -293,6 +290,7 @@
     </div>
     
     <!-- Recent History -->
+    <?php if ($user['role'] == 'admin'): ?>
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -387,6 +385,7 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
 <?php endif; ?>
 
 <!-- Quick Actions -->
