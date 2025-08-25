@@ -99,7 +99,7 @@
                 <!-- Alert for messages -->
                 <div id="alert-container"></div>
                 
-                <?= form_open('', ['id' => 'lecturerAttendanceForm', 'class' => 'row g-3', 'enctype' => 'multipart/form-data']) ?>
+                <?= form_open_multipart('attendance/submit_lecturer_attendance', ['id' => 'lecturerAttendanceForm', 'class' => 'needs-validation', 'novalidate' => '']) ?>
                     
                     <!-- Mata Kuliah -->
                     <div class="col-md-6">
@@ -268,68 +268,94 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-focus pada field pertama
     document.getElementById('subject').focus();
     
-    // Form submit handler
-    form.addEventListener('submit', function(e) {
+    // Form submission with photo
+    document.getElementById('lecturerAttendanceForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
+        console.log('Form submission started');
+        
+        // Get form elements
+        const form = this;
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerHTML;
+        
+        // Validate required fields
         const subject = document.getElementById('subject').value.trim();
         const className = document.getElementById('class_name').value.trim();
+        const photoFile = document.getElementById('lecture_photo').files[0];
         
-        // Basic validation
-        if (!subject || !className) {
-            showAlert('Mohon lengkapi mata kuliah dan kelas!', 'danger');
+        if (!subject) {
+            showAlert('Mata kuliah wajib diisi', 'danger');
+            document.getElementById('subject').focus();
+            return;
+        }
+        
+        if (!className) {
+            showAlert('Kelas wajib diisi', 'danger');
+            document.getElementById('class_name').focus();
+            return;
+        }
+        
+        if (!photoFile) {
+            showAlert('Foto kegiatan mengajar wajib diambil', 'danger');
+            document.getElementById('cameraBtn').focus();
+            return;
+        }
+        
+        // Validate photo file
+        if (!photoFile.type.startsWith('image/')) {
+            showAlert('File yang dipilih bukan gambar', 'danger');
+            return;
+        }
+        
+        if (photoFile.size > 5 * 1024 * 1024) { // 5MB
+            showAlert('Ukuran foto terlalu besar. Maksimal 5MB', 'danger');
             return;
         }
         
         // Show loading state
-        const originalHtml = submitBtn.innerHTML;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...';
         submitBtn.disabled = true;
         
-        // Prepare form data
-        const formData = new FormData();
-        formData.append('subject', subject);
-        formData.append('class_name', className);
+        // Create FormData for file upload
+        const formData = new FormData(form);
         
-        // Add photo file
-        const photoFile = document.getElementById('lecture_photo').files[0];
-        if (photoFile) {
-            formData.append('lecture_photo', photoFile);
-        } else {
-            showAlert('Mohon pilih foto kegiatan mengajar!', 'danger');
-            submitBtn.innerHTML = originalHtml;
-            submitBtn.disabled = false;
-            return;
+        // Log form data for debugging
+        console.log('Form data being sent:');
+        for (let [key, value] of formData.entries()) {
+            if (key === 'lecture_photo') {
+                console.log(key, 'File:', value.name, 'Size:', value.size, 'Type:', value.type);
+            } else {
+                console.log(key, value);
+            }
         }
         
-        // Submit via AJAX
+        // Submit form with photo
         fetch('<?= base_url('attendance/submit_lecturer_attendance') ?>', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
+            console.log('Server response:', data);
+            
             if (data.success) {
                 showAlert(data.message, 'success');
-                setTimeout(function() {
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        window.location.href = '<?= base_url('dashboard') ?>';
-                    }
+                
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = data.redirect;
                 }, 2000);
             } else {
-                showAlert(data.message, 'danger');
-                // Reset button
-                submitBtn.innerHTML = originalHtml;
+                showAlert(data.message || 'Terjadi kesalahan. Silakan coba lagi.', 'danger');
+                submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showAlert('Terjadi kesalahan. Silakan coba lagi.', 'danger');
-            // Reset button
-            submitBtn.innerHTML = originalHtml;
+            console.error('Error submitting form:', error);
+            showAlert('Terjadi kesalahan jaringan. Silakan coba lagi.', 'danger');
+            submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         });
     });
@@ -381,48 +407,96 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Photo preview functionality
+    // Handle photo file selection/change
     document.getElementById('lecture_photo').addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const preview = document.getElementById('photoPreview');
-        const previewImage = document.getElementById('previewImage');
         const photoStatus = document.getElementById('photoStatus');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewImg = document.getElementById('previewImage');
+        const retakeBtn = document.getElementById('retakeBtn');
         
         if (file) {
+            console.log('File selected:', file.name, file.size, file.type);
+            
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                showAlert('File yang dipilih bukan gambar!', 'danger');
-                this.value = '';
-                preview.style.display = 'none';
-                photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+                showAlert('File yang dipilih bukan gambar. Silakan pilih file gambar.', 'danger');
+                this.value = ''; // Clear input
                 return;
             }
             
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                showAlert('Ukuran file terlalu besar! Maksimal 5MB.', 'danger');
-                this.value = '';
-                preview.style.display = 'none';
-                photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+                showAlert('Ukuran file terlalu besar. Maksimal 5MB.', 'danger');
+                this.value = ''; // Clear input
                 return;
             }
             
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImage.src = e.target.result;
-                preview.style.display = 'block';
-                photoStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Foto sudah ada';
-            };
-            reader.readAsDataURL(file);
+            // Show photo preview
+            if (photoPreview && previewImg) {
+                photoPreview.style.display = 'block';
+                
+                // Create preview URL
+                const previewUrl = URL.createObjectURL(file);
+                previewImg.src = previewUrl;
+                previewImg.alt = 'Preview Foto Kegiatan';
+                
+                // Update status
+                if (photoStatus) {
+                    photoStatus.innerHTML = `
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Foto berhasil dipilih: ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    `;
+                    photoStatus.className = 'photo-status text-success';
+                }
+                
+                // Show retake button
+                if (retakeBtn) {
+                    retakeBtn.style.display = 'inline-block';
+                }
+                
+                console.log('Photo preview displayed successfully');
+            }
         } else {
-            preview.style.display = 'none';
-            photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+            // No file selected
+            if (photoPreview) {
+                photoPreview.style.display = 'none';
+            }
+            if (photoStatus) {
+                photoStatus.innerHTML = '<i class="fas fa-info-circle text-info me-2"></i>Belum ada foto yang dipilih';
+                photoStatus.className = 'photo-status text-info';
+            }
+            if (retakeBtn) {
+                retakeBtn.style.display = 'none';
+            }
         }
     });
     
-    // Retake button handler
+    // Retake photo functionality
     document.getElementById('retakeBtn').addEventListener('click', function() {
+        console.log('Retake photo button clicked');
+        
+        // Clear current photo
+        const fileInput = document.getElementById('lecture_photo');
+        fileInput.value = '';
+        
+        // Hide preview
+        const photoPreview = document.getElementById('photoPreview');
+        if (photoPreview) {
+            photoPreview.style.display = 'none';
+        }
+        
+        // Reset status
+        const photoStatus = document.getElementById('photoStatus');
+        if (photoStatus) {
+            photoStatus.innerHTML = '<i class="fas fa-info-circle text-info me-2"></i>Belum ada foto yang dipilih';
+            photoStatus.className = 'photo-status text-info';
+        }
+        
+        // Hide retake button
+        this.style.display = 'none';
+        
+        // Open camera again
         openCamera();
     });
     
@@ -670,43 +744,98 @@ document.addEventListener('DOMContentLoaded', function() {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         
+        if (!video || !video.videoWidth || !video.videoHeight) {
+            console.error('Video not ready for capture');
+            showAlert('Kamera belum siap. Silakan tunggu sebentar.', 'warning');
+            return;
+        }
+        
         // Set canvas size to video size
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Draw video frame to canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        console.log('Capturing photo from video:', video.videoWidth, 'x', video.videoHeight);
         
-        // Convert to blob with high quality
-        canvas.toBlob(function(blob) {
-            if (blob) {
-                console.log('Photo captured, size:', blob.size, 'bytes');
-                
-                // Create file from blob with timestamp
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const file = new File([blob], `kegiatan_mengajar_${timestamp}.jpg`, {
-                    type: 'image/jpeg',
-                    lastModified: Date.now()
-                });
-                
-                // Set file to input
-                const fileInput = document.getElementById('lecture_photo');
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                
-                // Trigger change event to show preview
-                fileInput.dispatchEvent(new Event('change'));
-                
-                // Close camera modal
-                closeCameraModal();
-                
-                showAlert('Foto kegiatan berhasil diambil!', 'success');
-            } else {
-                console.error('Failed to capture photo');
-                showAlert('Gagal mengambil foto. Silakan coba lagi.', 'danger');
-            }
-        }, 'image/jpeg', 0.9); // Higher quality (90%)
+        try {
+            // Draw video frame to canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to blob with high quality
+            canvas.toBlob(function(blob) {
+                if (blob) {
+                    console.log('Photo captured successfully, size:', blob.size, 'bytes');
+                    
+                    // Create file from blob with timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const filename = `kegiatan_mengajar_${timestamp}.jpg`;
+                    const file = new File([blob], filename, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log('Created file object:', file.name, file.size, file.type);
+                    
+                    // Set file to input using DataTransfer
+                    const fileInput = document.getElementById('lecture_photo');
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                    
+                    console.log('File set to input, files count:', fileInput.files.length);
+                    
+                    // Trigger change event to show preview
+                    const changeEvent = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(changeEvent);
+                    
+                    // Close camera modal
+                    closeCameraModal();
+                    
+                    showAlert('Foto kegiatan berhasil diambil!', 'success');
+                    
+                    // Update photo status
+                    updatePhotoStatus(file);
+                } else {
+                    console.error('Failed to create blob from canvas');
+                    showAlert('Gagal mengambil foto. Silakan coba lagi.', 'danger');
+                }
+            }, 'image/jpeg', 0.9); // Higher quality (90%)
+            
+        } catch (error) {
+            console.error('Error capturing photo:', error);
+            showAlert('Terjadi kesalahan saat mengambil foto. Silakan coba lagi.', 'danger');
+        }
+    }
+    
+    // Update photo status display
+    function updatePhotoStatus(file) {
+        const photoStatus = document.getElementById('photoStatus');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewImg = document.getElementById('previewImage');
+        const retakeBtn = document.getElementById('retakeBtn');
+        
+        if (photoStatus && photoPreview && previewImg && retakeBtn) {
+            // Show photo preview
+            photoPreview.style.display = 'block';
+            
+            // Create preview URL
+            const previewUrl = URL.createObjectURL(file);
+            previewImg.src = previewUrl;
+            previewImg.alt = 'Preview Foto Kegiatan';
+            
+            // Update status text
+            photoStatus.innerHTML = `
+                <i class="fas fa-check-circle text-success me-2"></i>
+                Foto berhasil diambil: ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+            `;
+            photoStatus.className = 'photo-status text-success';
+            
+            // Show retake button
+            retakeBtn.style.display = 'inline-block';
+            
+            console.log('Photo status updated successfully');
+        } else {
+            console.error('Photo status elements not found');
+        }
     }
     
     // Switch between front and back camera

@@ -234,8 +234,28 @@ class Attendance_model extends CI_Model {
     
     // Create lecturer attendance with subject and class info
     public function create_lecturer_attendance($data) {
+        // Ensure required fields are present
+        $required_fields = ['user_id', 'qr_code_id', 'subject', 'class_name', 'lecture_photo'];
+        foreach ($required_fields as $field) {
+            if (!isset($data[$field]) || empty($data[$field])) {
+                log_message('error', 'Missing required field: ' . $field . ' in create_lecturer_attendance');
+                return false;
+            }
+        }
+        
+        // Log the data being inserted
+        log_message('info', 'Creating lecturer attendance: ' . json_encode($data));
+        
         $this->db->insert('attendance', $data);
-        return $this->db->insert_id();
+        $insert_id = $this->db->insert_id();
+        
+        if ($insert_id) {
+            log_message('info', 'Lecturer attendance created successfully with ID: ' . $insert_id);
+            return $insert_id;
+        } else {
+            log_message('error', 'Failed to create lecturer attendance: ' . $this->db->error()['message']);
+            return false;
+        }
     }
     
     // Get lecturer attendance for today with specific subject and class

@@ -15,9 +15,9 @@
                 </a>
                 <?php if (isset($target_user)): ?>
                     <a href="<?= base_url('admin/export_user_report') ?>?user_id=<?= $target_user->id ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-success">
-                        <i class="fas fa-download me-2"></i>
-                        Export CSV
-                    </a>
+                    <i class="fas fa-download me-2"></i>
+                    Export CSV
+                </a>
                 <?php endif; ?>
             </div>
         </div>
@@ -311,9 +311,9 @@
                                                     <?= $record->subject ?> - <?= $record->class_name ?: 'N/A' ?>
                                                 <?php elseif (isset($record->notes) && $record->notes): ?>
                                                     <?= $record->notes ?>
-                                                <?php else: ?>
+                                            <?php else: ?>
                                                     -
-                                                <?php endif; ?>
+                                            <?php endif; ?>
                                             </small>
                                         </td>
                                         <td>
@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-    
+
     // Initialize DataTable
     if (typeof $.fn.DataTable !== 'undefined' && document.getElementById('attendanceHistoryTable')) {
         $('#attendanceHistoryTable').DataTable({

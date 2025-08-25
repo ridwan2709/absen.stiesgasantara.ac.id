@@ -155,6 +155,14 @@ class Attendance extends CI_Controller {
                 return;
             }
             
+            // Process photo upload
+            $photo_data = $this->process_lecture_photo();
+            if (!$photo_data['success']) {
+                $response['message'] = $photo_data['message'];
+                echo json_encode($response);
+                return;
+            }
+            
             // Create lecturer attendance record
             $attendance_data = array(
                 'user_id' => $user_id,
@@ -164,6 +172,9 @@ class Attendance extends CI_Controller {
                 'subject' => $this->input->post('subject'),
                 'class_name' => $this->input->post('class_name'),
                 'lecture_notes' => $this->input->post('lecture_notes'),
+                'lecture_photo' => $photo_data['file_path'],
+                'photo_filename' => $photo_data['original_name'],
+                'photo_timestamp' => date('Y-m-d H:i:s'),
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             );
@@ -173,7 +184,7 @@ class Attendance extends CI_Controller {
                 $this->session->unset_userdata('temp_qr_data');
                 
                 $response['success'] = true;
-                $response['message'] = 'Absensi mengajar berhasil dicatat';
+                $response['message'] = 'Absensi mengajar berhasil dicatat dengan foto kegiatan';
                 $response['redirect'] = base_url('dashboard');
             } else {
                 $response['message'] = 'Gagal mencatat absensi mengajar';
@@ -181,6 +192,60 @@ class Attendance extends CI_Controller {
         }
         
         echo json_encode($response);
+    }
+    
+    // Process lecture photo upload
+    private function process_lecture_photo() {
+        $response = array('success' => false, 'message' => '', 'file_path' => '', 'original_name' => '');
+        
+        // Check if photo was uploaded
+        if (!isset($_FILES['lecture_photo']) || $_FILES['lecture_photo']['error'] !== UPLOAD_ERR_OK) {
+            $response['message'] = 'Foto kegiatan mengajar wajib diambil';
+            return $response;
+        }
+        
+        $file = $_FILES['lecture_photo'];
+        
+        // Validate file type
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/webp');
+        if (!in_array($file['type'], $allowed_types)) {
+            $response['message'] = 'Format file tidak didukung. Gunakan JPG, PNG, atau WebP';
+            return $response;
+        }
+        
+        // Validate file size (max 5MB)
+        $max_size = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $max_size) {
+            $response['message'] = 'Ukuran file terlalu besar. Maksimal 5MB';
+            return $response;
+        }
+        
+        // Generate unique filename
+        $timestamp = date('Y-m-d_H-i-s');
+        $user_id = $this->session->userdata('user_id');
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'lecture_' . $user_id . '_' . $timestamp . '.' . $extension;
+        
+        // Set upload path
+        $upload_path = 'uploads/lecture_photos/';
+        $file_path = $upload_path . $filename;
+        
+        // Ensure upload directory exists
+        if (!is_dir($upload_path)) {
+            mkdir($upload_path, 0755, true);
+        }
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $file_path)) {
+            $response['success'] = true;
+            $response['file_path'] = $file_path;
+            $response['original_name'] = $file['name'];
+            $response['message'] = 'Foto berhasil diupload';
+        } else {
+            $response['message'] = 'Gagal menyimpan foto. Silakan coba lagi';
+        }
+        
+        return $response;
     }
     
     // Legacy method for staff check-in (keep for compatibility)
