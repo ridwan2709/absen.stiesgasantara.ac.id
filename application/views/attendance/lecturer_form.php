@@ -1,3 +1,52 @@
+<style>
+.camera-container {
+    position: relative;
+    overflow: hidden;
+}
+
+#photoPreview {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    background-color: #f8f9fa;
+}
+
+#photoPreview img {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.camera-btn {
+    transition: all 0.3s ease;
+}
+
+.camera-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.photo-status {
+    min-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .input-group {
+        flex-direction: column;
+    }
+    
+    .input-group > * {
+        margin-bottom: 10px;
+        border-radius: 4px !important;
+    }
+    
+    .photo-status {
+        min-width: auto;
+        text-align: center;
+    }
+}
+</style>
+
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -50,7 +99,7 @@
                 <!-- Alert for messages -->
                 <div id="alert-container"></div>
                 
-                <?= form_open('', ['id' => 'lecturerAttendanceForm', 'class' => 'row g-3']) ?>
+                <?= form_open('', ['id' => 'lecturerAttendanceForm', 'class' => 'row g-3', 'enctype' => 'multipart/form-data']) ?>
                     
                     <!-- Mata Kuliah -->
                     <div class="col-md-6">
@@ -88,17 +137,42 @@
                     
                     <!-- Keterangan -->
                     <div class="col-12">
-                        <label for="lecture_notes" class="form-label">
-                            <i class="fas fa-sticky-note me-2"></i>
-                            Keterangan <span class="text-muted">(Opsional)</span>
+                        <label for="lecture_photo" class="form-label">
+                            <i class="fas fa-camera me-2"></i>
+                            Foto Kegiatan <span class="text-danger">*</span>
                         </label>
-                        <textarea class="form-control" 
-                                  id="lecture_notes" 
-                                  name="lecture_notes" 
-                                  rows="4" 
-                                  placeholder="Contoh: Materi hari ini membahas tentang normalisasi database, praktikum membuat ERD, dll"></textarea>
+                        <div class="input-group">
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="lecture_photo" 
+                                   name="lecture_photo" 
+                                   accept="image/*" 
+                                   capture="environment"
+                                   style="display: none;"
+                                   required>
+                            <button type="button" 
+                                    class="btn btn-primary camera-btn" 
+                                    id="cameraBtn"
+                                    onclick="openCamera()">
+                                <i class="fas fa-camera me-2"></i>
+                                Buka Kamera
+                            </button>
+                            <span class="input-group-text photo-status" id="photoStatus">
+                                <i class="fas fa-exclamation-circle text-warning"></i>
+                                Belum ada foto
+                            </span>
+                        </div>
                         <div class="form-text">
-                            Keterangan tambahan tentang kegiatan mengajar hari ini
+                            Klik tombol "Buka Kamera" untuk langsung mengambil foto kegiatan mengajar
+                        </div>
+                        <div id="photoPreview" class="mt-3 camera-container" style="display: none;">
+                            <img id="previewImage" class="img-fluid rounded" style="max-height: 200px;" alt="Preview Foto">
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="retakeBtn">
+                                    <i class="fas fa-redo me-1"></i>
+                                    Ambil Ulang
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -175,7 +249,8 @@
                 <ul class="mb-0 small">
                     <li>Pastikan mata kuliah dan kelas sudah benar sebelum menyimpan</li>
                     <li>Anda dapat melakukan absensi untuk mata kuliah dan kelas yang berbeda di hari yang sama</li>
-                    <li>Keterangan bersifat opsional, namun disarankan untuk dicantumkan sebagai catatan kegiatan mengajar</li>
+                    <li>Foto kegiatan mengajar wajib diambil untuk dokumentasi kegiatan</li>
+                    <li>Pastikan foto jelas dan menunjukkan kegiatan mengajar yang sedang berlangsung</li>
                     <li>Data absensi akan tercatat dengan lokasi dan waktu scan QR Code</li>
                     <li>Jika terjadi kesalahan, hubungi administrator untuk melakukan koreksi</li>
                 </ul>
@@ -215,7 +290,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('subject', subject);
         formData.append('class_name', className);
-        formData.append('lecture_notes', document.getElementById('lecture_notes').value.trim());
+        
+        // Add photo file
+        const photoFile = document.getElementById('lecture_photo').files[0];
+        if (photoFile) {
+            formData.append('lecture_photo', photoFile);
+        } else {
+            showAlert('Mohon pilih foto kegiatan mengajar!', 'danger');
+            submitBtn.innerHTML = originalHtml;
+            submitBtn.disabled = false;
+            return;
+        }
         
         // Submit via AJAX
         fetch('<?= base_url('attendance/submit_lecturer_attendance') ?>', {
@@ -296,5 +381,80 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Photo preview functionality
+    document.getElementById('lecture_photo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('photoPreview');
+        const previewImage = document.getElementById('previewImage');
+        const photoStatus = document.getElementById('photoStatus');
+        
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showAlert('File yang dipilih bukan gambar!', 'danger');
+                this.value = '';
+                preview.style.display = 'none';
+                photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+                return;
+            }
+            
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('Ukuran file terlalu besar! Maksimal 5MB.', 'danger');
+                this.value = '';
+                preview.style.display = 'none';
+                photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                preview.style.display = 'block';
+                photoStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Foto sudah ada';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+            photoStatus.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i> Belum ada foto';
+        }
+    });
+    
+    // Retake button handler
+    document.getElementById('retakeBtn').addEventListener('click', function() {
+        openCamera();
+    });
+    
+    // Open camera function
+    function openCamera() {
+        const cameraBtn = document.getElementById('cameraBtn');
+        const originalText = cameraBtn.innerHTML;
+        
+        // Show loading state
+        cameraBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Membuka Kamera...';
+        cameraBtn.disabled = true;
+        
+        // Trigger file input
+        document.getElementById('lecture_photo').click();
+        
+        // Reset button after a short delay
+        setTimeout(function() {
+            cameraBtn.innerHTML = originalText;
+            cameraBtn.disabled = false;
+        }, 2000);
+    }
+    
+    // Check if device supports camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Device supports camera
+        document.getElementById('cameraBtn').classList.add('btn-primary');
+    } else {
+        // Device doesn't support camera, fallback to file input
+        document.getElementById('cameraBtn').classList.add('btn-secondary');
+        document.getElementById('cameraBtn').innerHTML = '<i class="fas fa-image me-2"></i>Pilih Foto';
+        document.getElementById('lecture_photo').removeAttribute('capture');
+    }
 });
 </script>
