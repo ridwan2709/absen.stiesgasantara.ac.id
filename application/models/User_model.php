@@ -90,4 +90,10 @@ class User_model extends CI_Model {
     public function get_total_users() {
         return $this->db->count_all('users');
     }
+
+    // Reset password
+    public function reset_password($id) {
+        $this->db->where('id', $id);
+        return $this->db->update('users', array('password' => password_hash('password', PASSWORD_DEFAULT)));
+    }
 }

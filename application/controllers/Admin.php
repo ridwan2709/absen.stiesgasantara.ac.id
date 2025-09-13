@@ -113,6 +113,15 @@ class Admin extends CI_Controller {
         }
         redirect('admin/users');
     }
+
+    public function reset_password($id) {
+        if ($this->User_model->reset_password($id)) {
+            $this->session->set_flashdata('success', 'Password berhasil direset');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal mereset password');
+        }
+        redirect('admin/edit_user/' . $id);
+    }
     
     // QR Code Management
     public function qr_codes() {
